@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>貓狗分類器</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 40px;
+      background-color: #f9f9f9;
+      text-align: center;
+    }
+    h1 {
+      color: #333;
+    }
+    input[type="file"] {
+      margin: 20px 0;
+    }
+    #preview {
+      max-width: 300px;
+      max-height: 300px;
+      margin: 20px auto;
+      display: none;
+    }
+    #loading {
+      color: #888;
+      display: none;
+    }
+    #result {
+      font-size: 1.2rem;
+      margin-top: 20px;
+      color: #007BFF;
+    }
+  </style>
+</head>
+<body>
+  <h1>🐶🐱 貓狗分類器</h1>
+  <form id="upload-form" enctype="multipart/form-data">
+    <input type="file" id="image-input" name="file" accept="image/*" required />
+    <br/>
+    <button type="submit">上傳並預測</button>
+  </form>
+
+  <img id="preview" src="#" alt="上傳預覽" />
+  <div id="loading">🔄 判別中，請稍等...</div>
+  <div id="result"></div>
+
+  <script>
+    const form = document.getElementById('upload-form');
+    const input = document.getElementById('image-input');
+    const preview = document.getElementById('preview');
+    const loading = document.getElementById('loading');
+    const result = document.getElementById('result');
+
+    // 預覽圖片
+    input.addEventListener('change', () => {
+      const file = input.files[0];
+      if (file) {
+        preview.src = URL.createObjectURL(file);
+        preview.style.display = "block";
+      }
+    });
+
+    // 提交表單並上傳圖片
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const file = input.files[0];
+      if (!file) return;
+
+      const formData = new FormData();
+      formData.append("file", file);
+
+      result.textContent = "";
+      loading.style.display = "block";
+
+      try {
+        const res = await fetch("/predict", {
+          method: "POST",
+          body: formData
+        });
+
+        const data = await res.json();
+        if (data.error) {
+          result.textContent = `❌ 錯誤：${data.error}`;
+        } else {
+          result.innerHTML = `✅ 預測結果：<strong>${data.label}</strong><br/>機率：${(data.probability * 100).toFixed(2)}%`;
+        }
+      } catch (err) {
+        result.textContent = `❌ 請求失敗：${err.message}`;
+      } finally {
+        loading.style.display = "none";
+      }
+    });
+  </script>
+</body>
+</html>
